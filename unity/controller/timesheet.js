@@ -182,18 +182,28 @@ const listEvent = async (req, res) => {
 
   try {
     const filter = req.query.search;
+    const filtProject = req.query.project;
 
-    let listEvent;
+    let listEvent = await Event.find({}).lean();
+    const filterGo = {
+      $or: [],
+    };
 
     if (filter) {
-      listEvent = await Event.find({
-        $or: [
-          { eventTitle: { $regex: filter } },
-          { projectName: { $regex: filter } },
-        ],
-      }).lean();
-    } else {
-      listEvent = await Event.find({}).lean();
+      filterGo.$or.push(
+        { eventTitle: { $regex: filter } },
+        { projectName: { $regex: filter } }
+      );
+
+      listEvent = await Event.find(filterGo).lean();
+    }
+
+    if (filtProject && filtProject.length > 0) {
+      filtProject.map((i) => {
+        filterGo.$or.push({ projectName: i });
+      });
+
+      listEvent = await Event.find(filterGo).lean();
     }
 
     if (!listEvent) {
